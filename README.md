@@ -1,33 +1,54 @@
 # Christmas World
 
-Proyecto de una aplicación web con temática navideña. El desarrollo está en una etapa inicial: el repositorio tiene una estructura base, pero todavía no incluye la configuración necesaria para instalar dependencias o ejecutar la aplicación.
+Aplicación web con React, TypeScript y Vite. La interfaz actual muestra una pantalla inicial; las vistas de acceso y registro todavía no están implementadas.
 
-## Estructura actual
+## Requisitos
 
-```text
-public/
-  images/        Imágenes públicas de la aplicación
-src/
-  assets/        Recursos importados desde el código
-  components/    Componentes reutilizables
-  pages/         Vistas o páginas
-  contexts/      Contextos compartidos
-  services/      Servicios e integraciones
-  data/          Datos estáticos
-  types/         Tipos de TypeScript
-  App.tsx        Componente principal
-  App.css        Estilos del componente principal
-  index.css      Estilos globales
-  main.tsx       Punto de entrada
+- Node.js 24.12 o posterior.
+- npm.
+
+## Configuración
+
+Crea `.env.local` en la raíz del proyecto y añade la configuración de tu aplicación web de Firebase:
+
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
-## Estado del proyecto
+`.env.local` está excluido de Git. Las variables con prefijo `VITE_` se incluyen en el código que recibe el navegador; protege los datos de Firebase con reglas de Firestore y restricciones de API Key en Firebase Console.
 
-- La estructura de carpetas y los archivos iniciales están creados.
-- Los archivos de la aplicación todavía no tienen implementación.
-- `package.json` y `vite.config.ts` están pendientes de configuración.
-- Los comandos para instalar dependencias e iniciar la aplicación se documentarán cuando estén disponibles.
+## Desarrollo
 
-## Próximos avances
+```bash
+npm install
+npm run dev
+```
 
-Este README se actualizará conforme avance el proyecto, incluyendo la configuración, las funcionalidades implementadas y las instrucciones para ejecutar la aplicación.
+El servidor local muestra la dirección en la terminal. Después de cambiar `.env.local`, reinícialo para que Vite vuelva a cargar las variables.
+
+## Compilación
+
+```bash
+npm run build
+npm run preview
+```
+
+`npm run build` comprueba los tipos de TypeScript y genera los archivos de producción en `dist/`. `npm run preview` sirve esa compilación localmente.
+
+## Estructura
+
+```text
+src/
+  components/    Componentes de acceso y navegación, aún sin implementar
+  contexts/      Contexto de autenticación, aún sin implementar
+  pages/         Vistas de inicio, acceso y registro, aún sin implementar
+  services/      Configuración de Firebase
+  types/         Tipos de usuario, aún sin implementar
+  App.tsx        Pantalla inicial
+  main.tsx       Entrada de React
+```
