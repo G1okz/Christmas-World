@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validNickname(nickname) {
+      return nickname is string && nickname.matches('^[a-z0-9_]{3,20}$');
+    }
+
+    function hasInitialProgress(uid) {
+      let path = /databases/$(database)/documents/userProgress/$(uid);
+      let progress = getAfter(path).data;
+      return existsAfter(path)
+        && progress.keys().hasOnly([
+          'openedAdventDays',
+          'completedChallenges',
+          'quizStats',
+          'updatedAt'
+        ])
+        && progress.keys().hasAll([
+          'openedAdventDays',
+          'completedChallenges',
+          'quizStats',
+          'updatedAt'
+        ])
+        && progress.openedAdventDays == []
+        && progress.completedChallenges == []
+        && progress.quizStats.gamesPlayed == 0
+        && progress.quizStats.correctAnswers == 0
+        && progress.quizStats.totalAnswers == 0
+        && progress.quizStats.bestScore == 0
+        && progress.updatedAt is timestamp;
+    }
+
+    function hasInitialProfile(uid, nickname) {
+      let path = /databases/$(database)/documents/users/$(uid);
+      let profile = getAfter(path).data;
+      return existsAfter(path)
+        && profile.uid == uid
+        && profile.nickname == nickname
+        && profile.nicknameNormalized == nickname
+        && profile.totalPoints == 0;
+    }
+
+    function hasInitialNickname(uid) {
+      let userPath = /databases/$(database)/documents/users/$(uid);
+      let profile = getAfter(userPath).data;
+      let nicknamePath = /databases/$(database)/documents/nicknames/$(profile.nicknameNormalized);
+      return existsAfter(userPath)
+        && validNickname(profile.nicknameNormalized)
+        && hasInitialProfile(uid, profile.nicknameNormalized)
+        && existsAfter(nicknamePath)
+        && getAfter(nicknamePath).data.createdAt is timestamp;
+    }
+
+    match /users/{uid} {
+      allow get, list: if owns(uid);
+      allow create: if owns(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'email',
+          'nickname',
+          'nicknameNormalized',
+          'createdAt',
+          'totalPoints'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'email',
+          'nickname',
+          'nicknameNormalized',
+          'createdAt',
+          'totalPoints'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && validNickname(request.resource.data.nickname)
+        && request.resource.data.nicknameNormalized == request.resource.data.nickname
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.totalPoints == 0
+        && !exists(
+          /databases/$(database)/documents/nicknames/$(request.resource.data.nicknameNormalized)
+        )
+        && existsAfter(
+          /databases/$(database)/documents/nicknames/$(request.resource.data.nicknameNormalized)
+        )
+        && getAfter(
+          /databases/$(database)/documents/nicknames/$(request.resource.data.nicknameNormalized)
+        ).data.createdAt is timestamp
+        && hasInitialProgress(uid);
+      allow update, delete: if false;
+    }
+
+    match /nicknames/{nickname} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if owns(request.auth.uid)
+        && validNickname(nickname)
+        && request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.keys().hasAll(['createdAt'])
+        && request.resource.data.createdAt is timestamp
+        && hasInitialProfile(request.auth.uid, nickname)
+        && hasInitialProgress(request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    match /userProgress/{uid} {
+      allow get, list: if owns(uid);
+      allow create: if owns(uid)
+        && request.resource.data.keys().hasOnly([
+          'openedAdventDays',
+          'completedChallenges',
+          'quizStats',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'openedAdventDays',
+          'completedChallenges',
+          'quizStats',
+          'updatedAt'
+        ])
+        && request.resource.data.openedAdventDays == []
+        && request.resource.data.completedChallenges == []
+        && request.resource.data.quizStats.gamesPlayed == 0
+        && request.resource.data.quizStats.correctAnswers == 0
+        && request.resource.data.quizStats.totalAnswers == 0
+        && request.resource.data.quizStats.bestScore == 0
+        && request.resource.data.updatedAt is timestamp
+        && hasInitialNickname(uid);
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
